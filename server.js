@@ -102,15 +102,15 @@ Rules:
       }
     );
 
-    const data = await response.json();
+     const data = await response.json();
 
-    if (!response.ok) {
-      console.error(data);
+if (!response.ok) {
+  console.error("Gemini API Error:", data);
 
-      return res.status(500).json({
-        error: "Gemini API error"
-      });
-    }
+  return res.status(response.status).json({
+    error: data.error?.message || "Gemini API error"
+  });
+}
 
     const text =
       data.candidates?.[0]?.content?.parts?.[0]?.text;
