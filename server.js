@@ -9,8 +9,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
- app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/Index.html");
+ app.use(express.static(__dirname));
+
+app.get("/", (req, res) => {
+  res.sendFile("Index.html", { root: __dirname });
 });
 
 app.post("/api/quiz", async (req, res) => {
