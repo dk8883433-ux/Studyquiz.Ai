@@ -249,9 +249,12 @@ async function generateQuiz() {
       );
 
 
-    if (!response.ok) {
-      throw new Error("Server error");
-    }
+     if (!response.ok) {
+  const errorText = await response.text();
+  throw new Error(
+    `Server ${response.status}: ${errorText}`
+  );
+     }
 
 
     const data =
