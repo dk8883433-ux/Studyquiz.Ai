@@ -287,12 +287,10 @@ async function generateQuiz() {
   }
 
   catch (error) {
+  console.error(error);
 
-    console.error(error);
-
-    loading.innerText =
-      "❌ AI server connect nahi hua.";
-
+  loading.innerText =
+    "❌ Error: " + error.message;
   }
 }
 
