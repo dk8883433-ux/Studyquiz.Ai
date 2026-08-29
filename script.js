@@ -3,7 +3,7 @@
 // ================================
 
 // ⚠️ Deploy होने के बाद यहाँ अपना Render URL डालेंगे
-const API_URL = "https://YOUR-RENDER-URL.onrender.com";
+const API_URL = "https://studyquiz-ai-968s.onrender.com";
 
 let questions = [];
 let currentQuestion = 0;
