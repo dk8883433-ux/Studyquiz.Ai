@@ -9,10 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "StudyQuiz AI Server is running 🚀"
-  });
+ app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
 });
 
 app.post("/api/quiz", async (req, res) => {
