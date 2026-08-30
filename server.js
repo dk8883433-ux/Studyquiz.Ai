@@ -127,6 +127,118 @@ Rules:
     });
   }
 });
+// ================================
+// SMART TOPIC / CHAPTER GENERATOR
+// ================================
+
+app.post("/api/topics", async (req, res) => {
+
+  try {
+    const { topic } = req.body;
+
+    if (!topic) {
+      return res.status(400).json({
+        error: "Topic is required"
+      });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is not configured"
+      });
+    }
+
+    const prompt = `
+You are an educational assistant.
+
+The user entered:
+"${topic}"
+
+Generate useful related chapters, topics, or subtopics based on exactly what the user entered.
+
+If the user enters a book name, suggest its chapters.
+If the user enters a subject, suggest its important topics.
+If the user enters a general topic, suggest related subtopics.
+
+Return ONLY valid JSON.
+
+Format:
+{
+  "topics": [
+    "Topic 1",
+    "Topic 2",
+    "Topic 3",
+    "Topic 4",
+    "Topic 5"
+  ]
+}
+
+Give 5 to 15 useful suggestions.
+Do not add markdown.
+`;
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" +
+      encodeURIComponent(process.env.GEMINI_API_KEY),
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
+
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Gemini Topic Error:", data);
+
+      return res.status(response.status).json({
+        error: data.error?.message || "Gemini API error"
+      });
+    }
+
+    const text =
+      data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      return res.status(500).json({
+        error: "AI response empty"
+      });
+    }
+
+    const result = JSON.parse(text);
+
+    res.json(result);
+
+  } catch (error) {
+
+    console.error("Topic generation error:", error);
+
+    res.status(500).json({
+      error: "Topic generation failed"
+    });
+
+  }
+
+});
 app.post("/api/quiz", async (req, res) => {
 
   try {
