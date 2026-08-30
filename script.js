@@ -182,7 +182,126 @@ window.addEventListener("load", function () {
 
 });
 
+// ================================
+// SMART TOPIC / CHAPTER SUGGESTIONS
+// ================================
 
+let topicTimer;
+
+document.getElementById("topic").addEventListener("input", function () {
+
+  clearTimeout(topicTimer);
+
+  const topic = this.value.trim();
+
+  const smartBox =
+    document.getElementById("smartTopics");
+
+  const suggestion =
+    document.getElementById("topicSuggestion");
+
+  if (topic.length < 3) {
+    smartBox.classList.add("hidden");
+    suggestion.innerHTML =
+      '<option value="">-- Topic select karo --</option>';
+    return;
+  }
+
+  topicTimer = setTimeout(function () {
+    getSmartTopics(topic);
+  }, 800);
+
+});
+
+
+async function getSmartTopics(topic) {
+
+  const smartBox =
+    document.getElementById("smartTopics");
+
+  const suggestion =
+    document.getElementById("topicSuggestion");
+
+  try {
+
+    smartBox.classList.remove("hidden");
+
+    suggestion.innerHTML =
+      '<option value="">🤖 Topics load ho rahe hain...</option>';
+
+    const response =
+      await fetch(
+        API_URL + "/api/topics",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+            topic: topic
+          })
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error("Topic server error");
+    }
+
+    const data =
+      await response.json();
+
+    if (
+      !data.topics ||
+      data.topics.length === 0
+    ) {
+      smartBox.classList.add("hidden");
+      return;
+    }
+
+    suggestion.innerHTML =
+      '<option value="">-- Topic select karo --</option>';
+
+    data.topics.forEach(function (item) {
+
+      const option =
+        document.createElement("option");
+
+      option.value = item;
+
+      option.textContent = item;
+
+      suggestion.appendChild(option);
+
+    });
+
+  } catch (error) {
+
+    console.error("Smart topic error:", error);
+
+    smartBox.classList.add("hidden");
+  }
+
+}
+
+
+function selectSuggestedTopic() {
+
+  const suggestion =
+    document.getElementById("topicSuggestion");
+
+  const selected =
+    suggestion.value;
+
+  if (!selected) {
+    return;
+  }
+
+  document.getElementById("topic").value =
+    selected;
+
+}
 // ================================
 // AI QUIZ
 // ================================
