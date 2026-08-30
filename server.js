@@ -14,7 +14,119 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.sendFile("Index.html", { root: __dirname });
 });
+app.post("/api/topics", async (req, res) => {
+  try {
+    const { subject } = req.body;
 
+    if (!subject) {
+      return res.status(400).json({
+        error: "Book or topic name is required"
+      });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is not configured"
+      });
+    }
+
+    const prompt = `
+You are an educational content organizer.
+
+The user entered:
+"${subject}"
+
+Understand what the user is referring to.
+
+If it is a book, class, subject, course, exam, programming language,
+or any educational topic, create a useful list of chapters/topics
+that a student can select for a quiz.
+
+Return ONLY valid JSON.
+
+Format:
+{
+  "title": "Name understood from user input",
+  "type": "chapters",
+  "items": [
+    {
+      "number": 1,
+      "name": "Chapter or Topic name"
+    }
+  ]
+}
+
+Rules:
+- Create 5 to 20 relevant items.
+- Use accurate and commonly recognized chapter/topic names when possible.
+- If the input is a book, give its chapters.
+- If the input is a subject/course, give major topics.
+- If the input is an exam, give useful preparation topics.
+- If the input is programming, give programming topics.
+- Keep names short and clear.
+- Do not add markdown.
+`;
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" +
+      encodeURIComponent(process.env.GEMINI_API_KEY),
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
+
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Gemini Topics Error:", data);
+
+      return res.status(response.status).json({
+        error: data.error?.message || "Gemini API error"
+      });
+    }
+
+    const text =
+      data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      return res.status(500).json({
+        error: "AI response empty"
+      });
+    }
+
+    const topics = JSON.parse(text);
+
+    res.json(topics);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Topic generation failed"
+    });
+  }
+});
 app.post("/api/quiz", async (req, res) => {
 
   try {
