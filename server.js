@@ -131,7 +131,7 @@ Rules:
 // SMART TOPIC / CHAPTER GENERATOR
 // ================================
 
-app.post("/api/topics", async (req, res) => {
+app.post("/api/quiz", async (req, res) => {
 
   try {
     const { topic } = req.body;
