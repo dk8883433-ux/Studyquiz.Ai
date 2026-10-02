@@ -2,7 +2,6 @@
 // STUDYQUIZ AI
 // ================================
 
-// ⚠️ Deploy होने के बाद यहाँ अपना Render URL डालेंगे
 const API_URL = "https://studyquiz-ai-968s.onrender.com";
 
 let questions = [];
@@ -169,49 +168,69 @@ function logout() {
 }
 
 
-window.addEventListener("load", function () {
-
-  const username =
-    localStorage.getItem(
-      "studyquiz_currentUser"
-    );
-
-  if (username) {
-    openApp(username);
-  }
-
-});
-
 // ================================
-// SMART TOPIC / CHAPTER SUGGESTIONS
+// SMART TOPIC / CHAPTER
 // ================================
 
-let topicTimer;
+let topicTimer = null;
 
-document.getElementById("topic").addEventListener("input", function () {
 
-  clearTimeout(topicTimer);
+function setupSmartTopics() {
 
-  const topic = this.value.trim();
+  const topicInput =
+    document.getElementById("topic");
 
-  const smartBox =
-    document.getElementById("smartTopics");
-
-  const suggestion =
-    document.getElementById("topicSuggestion");
-
-  if (topic.length < 3) {
-    smartBox.classList.add("hidden");
-    suggestion.innerHTML =
-      '<option value="">-- Topic select karo --</option>';
+  if (!topicInput) {
     return;
   }
 
-  topicTimer = setTimeout(function () {
-    getSmartTopics(topic);
-  }, 800);
 
-});
+  topicInput.addEventListener("input", function () {
+
+    clearTimeout(topicTimer);
+
+    const topic =
+      this.value.trim();
+
+
+    const smartBox =
+      document.getElementById("smartTopics");
+
+    const suggestion =
+      document.getElementById("topicSuggestion");
+
+
+    if (!smartBox || !suggestion) {
+      return;
+    }
+
+
+    if (topic.length < 3) {
+
+      smartBox.classList.add("hidden");
+
+      suggestion.innerHTML =
+        '<option value="">-- Topic select karo --</option>';
+
+      return;
+    }
+
+
+    smartBox.classList.remove("hidden");
+
+    suggestion.innerHTML =
+      '<option value="">🤖 Topics load ho rahe hain...</option>';
+
+
+    topicTimer = setTimeout(function () {
+
+      getSmartTopics(topic);
+
+    }, 800);
+
+  });
+
+}
 
 
 async function getSmartTopics(topic) {
@@ -222,12 +241,19 @@ async function getSmartTopics(topic) {
   const suggestion =
     document.getElementById("topicSuggestion");
 
+
+  if (!smartBox || !suggestion) {
+    return;
+  }
+
+
   try {
 
     smartBox.classList.remove("hidden");
 
     suggestion.innerHTML =
-      '<option value="">🤖 Topics load ho rahe hain...</option>';
+      '<option value="">🤖 AI topics bana raha hai...</option>';
+
 
     const response =
       await fetch(
@@ -245,23 +271,38 @@ async function getSmartTopics(topic) {
         }
       );
 
+
     if (!response.ok) {
-      throw new Error("Topic server error");
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        `Server ${response.status}: ${errorText}`
+      );
     }
+
 
     const data =
       await response.json();
 
+
     if (
       !data.topics ||
+      !Array.isArray(data.topics) ||
       data.topics.length === 0
     ) {
-      smartBox.classList.add("hidden");
+
+      suggestion.innerHTML =
+        '<option value="">No topics found</option>';
+
       return;
     }
 
+
     suggestion.innerHTML =
-      '<option value="">-- Topic select karo --</option>';
+      '<option value="">📚 Chapter / Topic select karo</option>';
+
 
     data.topics.forEach(function (item) {
 
@@ -276,11 +317,18 @@ async function getSmartTopics(topic) {
 
     });
 
+
   } catch (error) {
 
-    console.error("Smart topic error:", error);
+    console.error(
+      "Smart topic error:",
+      error
+    );
 
-    smartBox.classList.add("hidden");
+
+    suggestion.innerHTML =
+      '<option value="">❌ Topics load nahi ho paye</option>';
+
   }
 
 }
@@ -291,17 +339,27 @@ function selectSuggestedTopic() {
   const suggestion =
     document.getElementById("topicSuggestion");
 
+
+  if (!suggestion) {
+    return;
+  }
+
+
   const selected =
     suggestion.value;
+
 
   if (!selected) {
     return;
   }
 
+
   document.getElementById("topic").value =
     selected;
 
 }
+
+
 // ================================
 // AI QUIZ
 // ================================
@@ -312,15 +370,18 @@ async function generateQuiz() {
     document.getElementById("topic")
       .value.trim();
 
+
   const count =
     Number(
       document.getElementById("questionCount")
         .value
     );
 
+
   const difficulty =
     document.getElementById("difficulty")
       .value;
+
 
   const language =
     document.getElementById("language")
@@ -328,13 +389,16 @@ async function generateQuiz() {
 
 
   if (!topic) {
+
     alert("Pehle topic likho.");
+
     return;
   }
 
 
   const loading =
     document.getElementById("loading");
+
 
   loading.innerText =
     "🤖 AI questions bana raha hai...";
@@ -349,8 +413,7 @@ async function generateQuiz() {
           method: "POST",
 
           headers: {
-            "Content-Type":
-              "application/json"
+            "Content-Type": "application/json"
           },
 
           body: JSON.stringify({
@@ -368,12 +431,15 @@ async function generateQuiz() {
       );
 
 
-     if (!response.ok) {
-  const errorText = await response.text();
-  throw new Error(
-    `Server ${response.status}: ${errorText}`
-  );
-     }
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        `Server ${response.status}: ${errorText}`
+      );
+    }
 
 
     const data =
@@ -384,19 +450,25 @@ async function generateQuiz() {
       !data.questions ||
       data.questions.length === 0
     ) {
-      throw new Error("Questions nahi mile");
+
+      throw new Error(
+        "Questions nahi mile"
+      );
     }
 
 
     questions =
       data.questions;
 
+
     currentQuestion = 0;
+
     score = 0;
 
 
     document.getElementById("homePage")
       .classList.add("hidden");
+
 
     document.getElementById("quizPage")
       .classList.remove("hidden");
@@ -404,16 +476,20 @@ async function generateQuiz() {
 
     loading.innerText = "";
 
+
     showQuestion();
 
   }
 
   catch (error) {
-  console.error(error);
 
-  loading.innerText =
-    "❌ Error: " + error.message;
+    console.error(error);
+
+    loading.innerText =
+      "❌ Error: " +
+      error.message;
   }
+
 }
 
 
@@ -440,7 +516,8 @@ function showQuestion() {
 
   document.getElementById("scoreText")
     .innerText =
-      "Score: " + score;
+      "Score: " +
+      score;
 
 
   document.getElementById("questionText")
@@ -461,37 +538,49 @@ function showQuestion() {
   const options =
     document.getElementById("options");
 
+
   options.innerHTML = "";
 
 
-  q.options.forEach(function(option, index) {
+  q.options.forEach(
+    function(option, index) {
 
-    const button =
-      document.createElement("button");
-
-    button.className =
-      "option-btn";
-
-    button.innerText =
-      option;
+      const button =
+        document.createElement("button");
 
 
-    button.onclick =
-      function() {
-        checkAnswer(index, button);
-      };
+      button.className =
+        "option-btn";
 
 
-    options.appendChild(button);
+      button.innerText =
+        option;
 
-  });
+
+      button.onclick =
+        function() {
+
+          checkAnswer(
+            index,
+            button
+          );
+
+        };
+
+
+      options.appendChild(button);
+
+    }
+  );
 
 
   document.getElementById("explanation")
     .classList.add("hidden");
 
+
   document.getElementById("nextButton")
     .classList.add("hidden");
+
 }
 
 
@@ -522,24 +611,34 @@ function checkAnswer(
     );
 
 
-  buttons.forEach(function(button, index) {
+  buttons.forEach(
+    function(button, index) {
 
-    if (index === q.answer) {
-      button.classList.add("correct");
+      if (index === q.answer) {
+
+        button.classList.add(
+          "correct"
+        );
+
+      }
+
     }
-
-  });
+  );
 
 
   if (selected === q.answer) {
 
     score++;
 
-    selectedButton.classList.add("correct");
+    selectedButton.classList.add(
+      "correct"
+    );
 
   } else {
 
-    selectedButton.classList.add("wrong");
+    selectedButton.classList.add(
+      "wrong"
+    );
 
   }
 
@@ -551,10 +650,13 @@ function checkAnswer(
 
 
   explanation.innerText =
-    "💡 " + q.explanation;
+    "💡 " +
+    q.explanation;
 
 
-  explanation.classList.remove("hidden");
+  explanation.classList.remove(
+    "hidden"
+  );
 
 
   document.getElementById("nextButton")
@@ -563,7 +665,9 @@ function checkAnswer(
 
   document.getElementById("scoreText")
     .innerText =
-      "Score: " + score;
+      "Score: " +
+      score;
+
 }
 
 
@@ -588,6 +692,7 @@ function nextQuestion() {
 
 
   showQuestion();
+
 }
 
 
@@ -599,6 +704,7 @@ function showResult() {
 
   document.getElementById("quizPage")
     .classList.add("hidden");
+
 
   document.getElementById("resultPage")
     .classList.remove("hidden");
@@ -641,6 +747,7 @@ function showResult() {
   document.getElementById("resultMessage")
     .innerText =
       message;
+
 }
 
 
@@ -653,10 +760,56 @@ function backHome() {
   document.getElementById("resultPage")
     .classList.add("hidden");
 
+
   document.getElementById("homePage")
     .classList.remove("hidden");
+
 
   document.getElementById("topic")
     .value = "";
 
+
+  const smartBox =
+    document.getElementById("smartTopics");
+
+
+  const suggestion =
+    document.getElementById("topicSuggestion");
+
+
+  if (smartBox) {
+    smartBox.classList.add("hidden");
+  }
+
+
+  if (suggestion) {
+    suggestion.innerHTML =
+      '<option value="">-- Topic select karo --</option>';
+  }
+
 }
+
+
+// ================================
+// PAGE LOAD
+// ================================
+
+window.addEventListener(
+  "load",
+  function () {
+
+    const username =
+      localStorage.getItem(
+        "studyquiz_currentUser"
+      );
+
+
+    if (username) {
+      openApp(username);
+    }
+
+
+    setupSmartTopics();
+
+  }
+);
